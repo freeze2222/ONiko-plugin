@@ -1,27 +1,27 @@
 (function oniko() {
-  const isReducedMotion =
-    window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
+  const isReducedMotion = window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
 
+  // Exit if the user prefers reduced motion.
   if (isReducedMotion) return;
 
   const nikoEl = document.createElement("div");
 
-  // Store Niko's position.
+  // Load Niko's position from local storage.
   browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
-    let nikoPosX = result.nikoPosX || 32;
-    let nikoPosY = result.nikoPosY || 32;
+    let nikoPosX = result.nikoPosX || 32; // Initial X position
+    let nikoPosY = result.nikoPosY || 32; // Initial Y position
 
-    // Variables for mouse position.
-    let mousePosX = 0;
-    let mousePosY = 0;
+    let mousePosX = 0; // Mouse X position
+    let mousePosY = 0; // Mouse Y position
+    let frameCount = 0; // Frame counter
+    const nikoSpeed = 10; // Niko's movement speed
 
-    let frameCount = 0;
-    const nikoSpeed = 10;
-
-    // Sprites.
+    // Sprits.
     const spriteSets = {
+      // TODO: Idle animations.
       idle: [[0, 0]],
       /* alert: [[-7, -3]],
+
       scratchSelf: [
         [-5, 0],
         [-6, 0],
@@ -48,6 +48,7 @@
         [-2, 0],
         [-2, -1],
       ], */
+
       // Up
       N: [
         [0, 1],
@@ -105,14 +106,15 @@
       ],
     };
 
+
     function init() {
       const existingNiko = document.getElementById("oniko");
-      // If there is an existing Niko, remove it.
+      // Remove existing Niko if present.
       if (existingNiko) {
         existingNiko.remove();
       }
 
-      // Create Niko.
+      // Create Niko element.
       nikoEl.id = "oniko";
       nikoEl.ariaHidden = true;
       nikoEl.style.width = "48px";
@@ -120,11 +122,9 @@
       nikoEl.style.position = "fixed";
       nikoEl.style.pointerEvents = "none";
       nikoEl.style.imageRendering = "pixelated";
-      nikoEl.style.left = `${nikoPosX - 16}px`;
-      nikoEl.style.top = `${nikoPosY - 16}px`;
       nikoEl.style.zIndex = 2147483647;
 
-      // Attach sprites to Niko.
+      // Set background image for Niko.
       let nikoFile = browser.runtime.getURL("img/oniko.png");
       const curScript = document.currentScript;
       if (curScript && curScript.dataset.cat) {
@@ -136,60 +136,65 @@
 
       // Track mouse position.
       document.addEventListener("mousemove", function (event) {
-        mousePosX = event.clientX;
-        mousePosY = event.clientY;
+        mousePosX = event.clientX; // Update mouse X position
+        mousePosY = event.clientY; // Update mouse Y position
+        window.requestAnimationFrame(onAnimationFrame); // Start animation frame
       });
 
-      window.requestAnimationFrame(onAnimationFrame);
+      // Load Niko's position from cache when the tab is activated.
+      window.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'visible') {
+          browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
+            nikoPosX = result.nikoPosX || 32; // Load X position
+            nikoPosY = result.nikoPosY || 32; // Load Y position
+            updateNikoPosition(); // Update Niko's position on screen
+          });
+        }
+      });
     }
 
     let lastFrameTimestamp;
 
     // Animate Niko.
     function onAnimationFrame(timestamp) {
-      if (!nikoEl.isConnected) {
-        return;
-      }
-      if (!lastFrameTimestamp) {
-        lastFrameTimestamp = timestamp;
-      }
+      if (!nikoEl.isConnected) return; // Exit if Niko is not in the DOM
+      if (!lastFrameTimestamp) lastFrameTimestamp = timestamp; // Initialize timestamp
       if (timestamp - lastFrameTimestamp > 70) {
-        lastFrameTimestamp = timestamp;
-        frame();
+        lastFrameTimestamp = timestamp; // Update last frame timestamp
+        frame(); // Update Niko's position
       }
-      window.requestAnimationFrame(onAnimationFrame);
+      window.requestAnimationFrame(onAnimationFrame); // Request the next animation frame
     }
 
-    // Change sprite based on frame.
+    // Set the sprite based on the current frame.
     function setSprite(name, frame) {
       const sprite = spriteSets[name][frame % spriteSets[name].length];
       nikoEl.style.backgroundPosition = `${sprite[0] * 48}px ${sprite[1] * 64}px`;
     }
 
-    // Niko's animation.
+    // Update Niko's animation.
     function frame() {
-      frameCount += 3;
+      frameCount += 3; // Increment frame count
 
       // Calculate distance to mouse.
       const diffX = nikoPosX - mousePosX;
       const diffY = nikoPosY - mousePosY;
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
-      // Determine the direction of the mouse relative to Niko.
+      // Determine the direction of Niko based on mouse position.
       let direction = '';
-      direction += diffY / distance > 0.5 ? "N" : "";
-      direction += diffY / distance < -0.5 ? "S" : "";
-      direction += diffX / distance > 0.5 ? "W" : "";
-      direction += diffX / distance < -0.5 ? "E" : "";
+      if (diffY / distance > 0.5) direction += "N";
+      else if (diffY / distance < -0.5) direction += "S";
+      else if (diffX / distance > 0.5) direction += "W";
+      else if (diffX / distance < -0.5) direction += "E";
 
-      // Stop Niko if he has reached the mouse.
+      // Stop Niko if he is close to the mouse.
       if (distance < nikoSpeed || distance < 128) {
-        setSprite(direction, 0);
+        setSprite(direction, 0); // Set idle sprite
         return;
       }
 
-      // Change sprite based on frame.
-      setSprite(direction, frameCount);
+      setSprite(direction, frameCount); // Update sprite based on frame count
 
       // Update Niko's position.
       nikoPosX -= (diffX / distance) * nikoSpeed;
@@ -199,31 +204,24 @@
       nikoPosX = Math.min(Math.max(16, nikoPosX), window.innerWidth - 16);
       nikoPosY = Math.min(Math.max(16, nikoPosY), window.innerHeight - 16);
 
-      // Update Niko's style.
+      updateNikoPosition(); // Update Niko's position on screen
+    }
+
+    // Update Niko's position on screen and save it in cache.
+    function updateNikoPosition() {
       nikoEl.style.left = `${nikoPosX - 16}px`;
       nikoEl.style.top = `${nikoPosY - 16}px`;
 
       // Save Niko's current position in cache.
-      browser.storage.local.set({ nikoPosX: nikoPosX, nikoPosY: nikoPosY });
+      browser.storage.local.set({ nikoPosX, nikoPosY });
 
       // Send a message to update Niko's position in other parts of the application.
       browser.runtime.sendMessage({
         action: "updateNikoPosition",
-        nikoPosX: nikoPosX,
-        nikoPosY: nikoPosY
+        nikoPosX,
+        nikoPosY
       });
     }
-
-    // Load Niko's position from cache.
-    browser.runtime.onMessage.addListener((request) => {
-      if (request.action === "setNikoPosition") {
-        nikoPosX = request.nikoPosX;
-        nikoPosY = request.nikoPosY;
-
-        nikoEl.style.left = `${nikoPosX - 16}px`;
-        nikoEl.style.top = `${nikoPosY - 16}px`;
-      }
-    });
 
     // Clean up Niko when the window is about to unload.
     window.addEventListener("beforeunload", function() {
@@ -233,6 +231,7 @@
       }
     });
 
-    init();
+    init(); // Initialize Niko
   });
 })();
+

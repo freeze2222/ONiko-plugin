@@ -13,102 +13,42 @@
 
     let mousePosX = 0; // Mouse X position
     let mousePosY = 0; // Mouse Y position
+
     let frameCount = 0; // Frame counter
+    let sleepFrameCount = 0; // Frame counter for sleep animation
+
     const nikoSpeed = 10; // Niko's movement speed
+    const sleepFrameSpeed = 0.1; // Speed of sleep frame change (lower is slower)
 
-    // Sprits.
+    let SleepTimer; // Timer for sleep state
+    const idleTime = 30000; // 30 seconds
+    let isSleeping = false; // Flag to check if Niko is sleeping
+
+    // Sprites.
     const spriteSets = {
-      // TODO: Idle animations.
       idle: [[0, 0]],
-      /* alert: [[-7, -3]],
-
-      scratchSelf: [
-        [-5, 0],
-        [-6, 0],
-        [-7, 0],
-      ],
-      scratchWallN: [
-        [0, 0],
-        [0, -1],
-      ],
-      scratchWallS: [
-        [-7, -1],
-        [-6, -2],
-      ],
-      scratchWallE: [
-        [-2, -2],
-        [-2, -3],
-      ],
-      scratchWallW: [
-        [-4, 0],
-        [-4, -1],
-      ],
-      tired: [[-3, -2]],
-      sleeping: [
-        [-2, 0],
-        [-2, -1],
-      ], */
-
+      // Sleep sprites.
+      SleepN: [[0, 1], [-1, 1], [-2, 1], [-3, 1]], // Up
+      SleepE: [[0, 2], [-1, 2], [-2, 2], [-3, 2]], // Left
+      SleepW: [[0, 3], [-1, 3], [-2, 3], [-3, 3]], // Right
+      SleepS: [[0, 4], [-1, 4], [-2, 4], [-3, 4]], // Down
       // Up
-      N: [
-        [0, 1],
-        [-1, 1],
-        [-2, 1],
-        [-3, 1],
-      ],
-      NE: [
-        [0, 1],
-        [-1, 1],
-        [-2, 2],
-        [-3, 2],
-      ],
-      NW: [
-        [0, 1],
-        [-1, 1],
-        [-2, 3],
-        [-3, 3],
-      ],
-
+      N: [[0, 5], [-1, 5], [-2, 5], [-3, 5]],
+      NE: [[0, 5], [-1, 5], [-2, 6], [-3, 6]],
+      NW: [[0, 5], [-1, 5], [-2, 7], [-3, 7]],
       // Left
-      E: [
-        [0, 2],
-        [-1, 2],
-        [-2, 2],
-        [-3, 2],
-      ],
-
+      E: [[0, 6], [-1, 6], [-2, 6], [-3, 6]],
       // Right
-      W: [
-        [0, 3],
-        [-1, 3],
-        [-2, 3],
-        [-3, 3],
-      ],
-
+      W: [[0, 7], [-1, 7], [-2, 7], [-3, 7]],
       // Down
-      S: [
-        [0, 0],
-        [-1, 0],
-        [-2, 0],
-        [-3, 0],
-      ],
-      SE: [
-        [0, 0],
-        [-1, 0],
-        [-2, 2],
-        [-3, 2],
-      ],
-      SW: [
-        [0, 0],
-        [-1, 0],
-        [-2, 3],
-        [-3, 3],
-      ],
+      S: [[0, 0], [-1, 0], [-2, 0], [-3, 0]],
+      SE: [[0, 0], [-1, 0], [-2, 6], [-3, 6]],
+      SW: [[0, 0], [-1, 0], [-2, 7], [-3, 7]],
     };
-
 
     function init() {
       const existingNiko = document.getElementById("oniko");
+      
       // Remove existing Niko if present.
       if (existingNiko) {
         existingNiko.remove();
@@ -138,6 +78,7 @@
       document.addEventListener("mousemove", function (event) {
         mousePosX = event.clientX; // Update mouse X position
         mousePosY = event.clientY; // Update mouse Y position
+        resetSleepTimer(); // Reset idle timer
         window.requestAnimationFrame(onAnimationFrame); // Start animation frame
       });
 
@@ -181,6 +122,21 @@
       const diffY = nikoPosY - mousePosY;
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
+      // Check if Niko should go to sleep
+      if (distance < 128 && !SleepTimer && !isSleeping) {
+        SleepTimer = setTimeout(() => {
+          isSleeping = true; // Set sleeping state
+          sleepFrameCount = 0; // Reset sleep frame count
+        }, idleTime);
+      }
+
+      // If Niko is sleeping, update sleep animation
+      if (isSleeping) {
+        setSprite(getSleepDirection(), Math.floor(sleepFrameCount));
+        sleepFrameCount += sleepFrameSpeed; // Increment sleep frame count based on speed
+        return;
+      }
+
       // Determine the direction of Niko based on mouse position.
       let direction = '';
       if (diffY / distance > 0.5) direction += "N";
@@ -205,6 +161,31 @@
       nikoPosY = Math.min(Math.max(16, nikoPosY), window.innerHeight - 16);
 
       updateNikoPosition(); // Update Niko's position on screen
+    }
+
+    // Get the direction for sleep animation
+    function getSleepDirection() {
+      const diffX = nikoPosX - mousePosX;
+      const diffY = nikoPosY - mousePosY;
+      const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
+      let direction = '';
+
+      if (diffY / distance > 0.5) direction += "SleepN";
+      else if (diffY / distance < -0.5) direction += "SleepS";
+      else if (diffX / distance > 0.5) direction += "SleepW";
+      else if (diffX / distance < -0.5) direction += "SleepE";
+
+      return direction;
+    }
+
+    // Reset idle timer
+    function resetSleepTimer() {
+      clearTimeout(SleepTimer);
+      SleepTimer = null; // Clear the idle timer
+      if (isSleeping) {
+        isSleeping = false; // Reset sleeping state
+        sleepFrameCount = 0; // Reset sleep frame count
+      }
     }
 
     // Update Niko's position on screen and save it in cache.
@@ -234,4 +215,3 @@
     init(); // Initialize Niko
   });
 })();
-

@@ -1,19 +1,20 @@
-browser.runtime.onMessage.addListener((request, sender) => {
+browser.runtime.onMessage.addListener((request) => {
     if (request.action === "updateNikoPosition") {
         // Update Niko's position in local storage
-        browser.storage.local.set({
-            nikoPosX: request.nikoPosX,
-            nikoPosY: request.nikoPosY
-        });
+        const { nikoPosX, nikoPosY } = request;
+
+        browser.storage.local.set({ nikoPosX, nikoPosY });
 
         // Send update to all tabs
         browser.tabs.query({}).then((tabs) => {
+            const message = {
+                action: "setNikoPosition",
+                nikoPosX,
+                nikoPosY
+            };
+
             tabs.forEach((tab) => {
-                browser.tabs.sendMessage(tab.id, {
-                    action: "setNikoPosition",
-                    nikoPosX: request.nikoPosX,
-                    nikoPosY: request.nikoPosY
-                });
+                browser.tabs.sendMessage(tab.id, message);
             });
         });
     }

@@ -1,4 +1,7 @@
 (function oniko() {
+  if (typeof browser === "undefined") {
+	var browser = chrome;
+  }
   const isReducedMotion =
     window.matchMedia(`(prefers-reduced-motion: reduce)`).matches;
 
@@ -106,6 +109,9 @@
     };
 
     function init() {
+      if (typeof browser === "undefined") {
+	var browser = chrome;
+      }
       const existingNiko = document.getElementById("oniko");
       // If there is an existing Niko, remove it.
       if (existingNiko) {
@@ -168,6 +174,9 @@
 
     // Niko's animation.
     function frame() {
+      if (typeof browser === "undefined") {
+	var browser = chrome;
+      }
       frameCount += 3;
 
       // Calculate distance to mouse.

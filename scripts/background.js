@@ -1,3 +1,6 @@
+if (typeof browser === "undefined") {
+	var browser = chrome;
+}
 browser.runtime.onMessage.addListener((request, sender) => {
     if (request.action === "updateNikoPosition") {
         // Update Niko's position in local storage

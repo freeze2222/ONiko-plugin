@@ -2,7 +2,7 @@ if (typeof browser === "undefined") {
 	var browser = chrome;
 }
 browser.runtime.onMessage.addListener((request, sender) => {
-    if (request.action === "updateNikoPosition") {
+    if (request && request.action === "updateNikoPosition") {
         // Update Niko's position in local storage
         browser.storage.local.set({
             nikoPosX: request.nikoPosX,
@@ -10,7 +10,7 @@ browser.runtime.onMessage.addListener((request, sender) => {
         });
 
         // Send update to all tabs
-        browser.tabs.query({}).then((tabs) => {
+        browser.tabs.query({active: true}).then((tabs) => {
             tabs.forEach((tab) => {
                 browser.tabs.sendMessage(tab.id, {
                     action: "setNikoPosition",

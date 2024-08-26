@@ -159,7 +159,7 @@
       if (!lastFrameTimestamp) {
         lastFrameTimestamp = timestamp;
       }
-      if (timestamp - lastFrameTimestamp > 70) {
+      if (timestamp - lastFrameTimestamp > 50) {
         lastFrameTimestamp = timestamp;
         frame();
       }
@@ -175,7 +175,7 @@
     // Niko's animation.
     function frame() {
       if (typeof browser === "undefined") {
-	var browser = chrome;
+		var browser = chrome;
       }
       frameCount += 3;
 
@@ -186,11 +186,12 @@
 
       // Determine the direction of the mouse relative to Niko.
       let direction = '';
-      direction += diffY / distance > 0.5 ? "N" : "";
-      direction += diffY / distance < -0.5 ? "S" : "";
-      direction += diffX / distance > 0.5 ? "W" : "";
-      direction += diffX / distance < -0.5 ? "E" : "";
-
+	  
+	  if(diffY / distance > 0.5){ direction += "N"; } else
+	  if(diffY / distance < -0.5){ direction += "S"; } else
+	  if(diffX / distance > 0.5){ direction += "W"; } else
+	  if(diffX / distance < -0.5){ direction += "E"; }
+	  
       // Stop Niko if he has reached the mouse.
       if (distance < nikoSpeed || distance < 128) {
         setSprite(direction, 0);

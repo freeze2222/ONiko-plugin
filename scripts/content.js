@@ -9,13 +9,14 @@
   if (typeof browser === "undefined") {
 	  var browser = chrome;
   }
+  
   // Load Niko's position from local storage.
   browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
     let nikoPosX = result.nikoPosX || 32; // Initial X position
     let nikoPosY = result.nikoPosY || 32; // Initial Y position
 
-    let mousePosX = 0; // Mouse X position
-    let mousePosY = 0; // Mouse Y position
+    let mousePosX = undefined; // Mouse X position
+    let mousePosY = undefined; // Mouse Y position
 
     let frameCount = 0; // Frame counter
     let sleepFrameCount = 0; // Frame counter for sleep animation
@@ -67,6 +68,12 @@
       nikoEl.style.imageRendering = "pixelated";
       nikoEl.style.zIndex = 2147483647;
 
+      // Disable overriding by other css files
+      nikoEl.style.setProperty("margin", "0px", "important");
+      nikoEl.style.setProperty("padding", "0px", "important");
+      nikoEl.style.setProperty("background-color", "transparent", "important");
+      nikoEl.style.setProperty("box-shadow", "0px 0px 0px 0px transparent", "important");
+
       // Set background image for Niko.
       let nikoFile = browser.runtime.getURL("img/oniko.png");
       const curScript = document.currentScript;
@@ -77,24 +84,21 @@
 
       document.body.appendChild(nikoEl);
 
+      browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
+        nikoPosX = result.nikoPosX || 32; // Load X position
+        nikoPosY = result.nikoPosY || 32; // Load Y position
+        console.log(nikoPosX, nikoPosY);
+      });
+
+      updateNikoPosition(); 
+
       // Track mouse position.
-      document.addEventListener("mousemove", function (event) {
+      document.onmousemove = function (event) {
         mousePosX = event.clientX; // Update mouse X position
         mousePosY = event.clientY; // Update mouse Y position
         resetSleepTimer(); // Reset idle timer
         window.requestAnimationFrame(onAnimationFrame); // Start animation frame
-      });
-
-      // Load Niko's position from cache when the tab is activated.
-      window.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === 'visible') {
-          browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
-            nikoPosX = result.nikoPosX || 32; // Load X position
-            nikoPosY = result.nikoPosY || 32; // Load Y position
-            updateNikoPosition(); // Update Niko's position on screen
-          });
-        }
-      });
+      };
     }
 
     let lastFrameTimestamp;
@@ -119,10 +123,14 @@
     // Update Niko's animation.
     function frame() {
       frameCount += 3; // Increment frame count
-
+      let diffX = 0;
+      let diffY = 0;
       // Calculate distance to mouse.
-      const diffX = nikoPosX - mousePosX;
-      const diffY = nikoPosY - mousePosY;
+      if (typeof(mousePosX) != undefined && typeof(mousePosY) != undefined){
+        diffX = nikoPosX - mousePosX;
+        diffY = nikoPosY - mousePosY;
+      } 
+      
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
       // Check if Niko should go to sleep
@@ -193,6 +201,7 @@
 
     // Update Niko's position on screen and save it in cache.
     function updateNikoPosition() {
+
       nikoEl.style.left = `${nikoPosX - 16}px`;
       nikoEl.style.top = `${nikoPosY - 16}px`;
 

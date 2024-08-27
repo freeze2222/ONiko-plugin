@@ -10,7 +10,7 @@ browser.runtime.onMessage.addListener((request) => {
         browser.storage.local.set({ nikoPosX, nikoPosY, mousePosX, mousePosY });
 
         // Send update to all tabs
-        browser.tabs.query({active: true}).then((tabs) => {
+        browser.tabs.query({}).then((tabs) => {
             const message = {
                 action: "setNikoPosition",
                 nikoPosX,
@@ -19,7 +19,9 @@ browser.runtime.onMessage.addListener((request) => {
                 mousePosY
             };
 			tabs.forEach((tab) => {
-                browser.tabs.sendMessage(tab.id, message);
+                if (chrome.runtime?.id) {
+                    browser.tabs.sendMessage(tab.id, message);
+                }
             });
 		});
     }

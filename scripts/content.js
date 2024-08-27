@@ -9,7 +9,7 @@
   if (typeof browser === "undefined") {
 	  var browser = chrome;
   }
-  
+
   // Load Niko's position from local storage.
   browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
     let nikoPosX = result.nikoPosX || 32; // Initial X position
@@ -92,7 +92,6 @@
         console.log(nikoPosX, nikoPosY);
       });
 
-      updateNikoPosition(); 
       resetSleepTimer(); 
       window.requestAnimationFrame(onAnimationFrame);
 
@@ -103,6 +102,15 @@
         resetSleepTimer(); // Reset idle timer
         window.requestAnimationFrame(onAnimationFrame); // Start animation frame
       };
+
+      browser.runtime.onMessage.addListener(
+        function(request, sender, sendResponse) {
+          nikoPosX = request.nikoPosX; // Get X position
+          nikoPosY = request.nikoPosY; // Get Y position
+          mousePosX = request.mousePosX;
+          mousePosY = request.mousePosY;
+        }
+      );
     }
 
     let lastFrameTimestamp;
@@ -120,8 +128,10 @@
 
     // Set the sprite based on the current frame.
     function setSprite(name, frame) {
-      const sprite = spriteSets[name][frame % spriteSets[name].length];
-      nikoEl.style.backgroundPosition = `${sprite[0] * 48}px ${sprite[1] * 64}px`;
+      if (name != undefined){
+        const sprite = spriteSets[name][frame % spriteSets[name].length];
+        nikoEl.style.backgroundPosition = `${sprite[0] * 48}px ${sprite[1] * 64}px`;
+      }
     }
 
     // Update Niko's animation.
@@ -153,11 +163,11 @@
       }
 
       // Determine the direction of Niko based on mouse position.
-      let direction = '';
-      if (diffY / distance > 0.5) direction += "N";
-      else if (diffY / distance < -0.5) direction += "S";
-      else if (diffX / distance > 0.5) direction += "W";
-      else if (diffX / distance < -0.5) direction += "E";
+      let direction = undefined;
+      if (diffY / distance > 0.5) direction = "N";
+      else if (diffY / distance < -0.5) direction = "S";
+      else if (diffX / distance > 0.5) direction = "W";
+      else if (diffX / distance < -0.5) direction = "E";
 
       // Stop Niko if he is close to the mouse.
       if (distance < nikoSpeed || distance < 128) {
@@ -183,12 +193,12 @@
       const diffX = nikoPosX - mousePosX;
       const diffY = nikoPosY - mousePosY;
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
-      let direction = '';
+      let direction = undefined;
 
-      if (diffY / distance > 0.5) direction += "SleepN";
-      else if (diffY / distance < -0.5) direction += "SleepS";
-      else if (diffX / distance > 0.5) direction += "SleepW";
-      else if (diffX / distance < -0.5) direction += "SleepE";
+      if (diffY / distance > 0.5) direction = "SleepN";
+      else if (diffY / distance < -0.5) direction = "SleepS";
+      else if (diffX / distance > 0.5) direction = "SleepW";
+      else if (diffX / distance < -0.5) direction = "SleepE";
 
       return direction;
     }
@@ -209,9 +219,6 @@
       nikoEl.style.left = `${nikoPosX - 16}px`;
       nikoEl.style.top = `${nikoPosY - 16}px`;
 
-      // Save Niko's current position in cache.
-      browser.storage.local.set({ nikoPosX, nikoPosY, mousePosX, mousePosY });
-
       // Send a message to update Niko's position in other parts of the application.
       browser.runtime.sendMessage({
         action: "updateNikoPosition",
@@ -220,6 +227,9 @@
         mousePosX,
         mousePosY
       });
+
+      // Save Niko's current position in cache.
+      // browser.storage.local.set({ nikoPosX, nikoPosY, mousePosX, mousePosY });
     }
 
     // Clean up Niko when the window is about to unload.

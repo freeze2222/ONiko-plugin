@@ -15,8 +15,8 @@
     let nikoPosX = result.nikoPosX || 32; // Initial X position
     let nikoPosY = result.nikoPosY || 32; // Initial Y position
 
-    let mousePosX = undefined; // Mouse X position
-    let mousePosY = undefined; // Mouse Y position
+    let mousePosX = result.mousePosX; // Mouse X position
+    let mousePosY = result.mousePosY; // Mouse Y position
 
     let frameCount = 0; // Frame counter
     let sleepFrameCount = 0; // Frame counter for sleep animation
@@ -84,13 +84,17 @@
 
       document.body.appendChild(nikoEl);
 
-      browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
+      browser.storage.local.get(['nikoPosX', 'nikoPosY', 'mousePosX', 'mousePosY']).then((result) => {
         nikoPosX = result.nikoPosX || 32; // Load X position
         nikoPosY = result.nikoPosY || 32; // Load Y position
+        mousePosX = result.mousePosX || undefined ; //Load mouse X position
+        mousePosY = result.mousePosY || undefined ; //Load mouse Y position
         console.log(nikoPosX, nikoPosY);
       });
 
       updateNikoPosition(); 
+      resetSleepTimer(); 
+      window.requestAnimationFrame(onAnimationFrame);
 
       // Track mouse position.
       document.onmousemove = function (event) {
@@ -206,13 +210,15 @@
       nikoEl.style.top = `${nikoPosY - 16}px`;
 
       // Save Niko's current position in cache.
-      browser.storage.local.set({ nikoPosX, nikoPosY });
+      browser.storage.local.set({ nikoPosX, nikoPosY, mousePosX, mousePosY });
 
       // Send a message to update Niko's position in other parts of the application.
       browser.runtime.sendMessage({
         action: "updateNikoPosition",
         nikoPosX,
-        nikoPosY
+        nikoPosY,
+        mousePosX,
+        mousePosY
       });
     }
 

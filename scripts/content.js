@@ -82,15 +82,14 @@
       }
       nikoEl.style.backgroundImage = `url(${nikoFile})`;
 
-      document.body.appendChild(nikoEl);
-
       browser.storage.local.get(['nikoPosX', 'nikoPosY', 'mousePosX', 'mousePosY']).then((result) => {
         nikoPosX = result.nikoPosX || 32; // Load X position
         nikoPosY = result.nikoPosY || 32; // Load Y position
         mousePosX = result.mousePosX || undefined ; //Load mouse X position
         mousePosY = result.mousePosY || undefined ; //Load mouse Y position
-        console.log(nikoPosX, nikoPosY);
       });
+
+      document.body.appendChild(nikoEl);
 
       resetSleepTimer(); 
       window.requestAnimationFrame(onAnimationFrame);

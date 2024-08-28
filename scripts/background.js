@@ -16,7 +16,9 @@ browser.runtime.onMessage.addListener((request) => {
             // Send message to all tabs
             return browser.tabs.query({}).then((tabs) => {
                 tabs.forEach((tab) => {
-                    browser.tabs.sendMessage(tab.id, message);
+                    if (browser.runtime?.id) {
+                        browser.tabs.sendMessage(tab.id, message);
+                    }
                 });
             });
         });

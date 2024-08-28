@@ -86,7 +86,6 @@
         mousePosY = result.mousePosY || undefined ; //Load mouse Y position
       });
 
-      updateNikoPosition(); 
       resetSleepTimer(); 
       window.requestAnimationFrame(onAnimationFrame);
 
@@ -112,10 +111,21 @@
       window.requestAnimationFrame(onAnimationFrame); // Request the next animation frame
     }
 
+    browser.runtime.onMessage.addListener(
+      function(request, sender, sendResponse) {
+        nikoPosX = request.nikoPosX; // Get X position
+        nikoPosY = request.nikoPosY; // Get Y position
+        mousePosX = request.mousePosX;
+        mousePosY = request.mousePosY;
+      }
+    );
+
     // Set the sprite based on the current frame.
     function setSprite(name, frame) {
-      const sprite = spriteSets[name][frame % spriteSets[name].length];
-      nikoEl.style.backgroundPosition = `${sprite[0] * 48}px ${sprite[1] * 64}px`;
+      if (name != undefined){
+        const sprite = spriteSets[name][frame % spriteSets[name].length];
+        nikoEl.style.backgroundPosition = `${sprite[0] * 48}px ${sprite[1] * 64}px`;
+      }
     }
 
     // Update Niko's animation.
@@ -199,9 +209,6 @@
     function updateNikoPosition() {
       nikoEl.style.left = `${nikoPosX - 24}px`;
       nikoEl.style.top = `${nikoPosY - 32}px`;
-
-      // Save Niko's and mouse current position in cache.
-      browser.storage.local.set({ nikoPosX, nikoPosY, mousePosX, mousePosY });
 
       // Send a message to update Niko's position in other parts of the application.
       browser.runtime.sendMessage({

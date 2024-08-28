@@ -3,18 +3,19 @@ browser.runtime.onMessage.addListener((request) => {
         // Update Niko's position in local storage
         const { nikoPosX, nikoPosY } = request;
 
-        browser.storage.local.set({ nikoPosX, nikoPosY });
-
-        // Send update to all tabs
-        browser.tabs.query({}).then((tabs) => {
+        // Update local storage and send update to all tabs
+        browser.storage.local.set({ nikoPosX, nikoPosY }).then(() => {
             const message = {
                 action: "setNikoPosition",
                 nikoPosX,
                 nikoPosY
             };
 
-            tabs.forEach((tab) => {
-                browser.tabs.sendMessage(tab.id, message);
+            // Send message to all tabs
+            return browser.tabs.query({}).then((tabs) => {
+                tabs.forEach((tab) => {
+                    browser.tabs.sendMessage(tab.id, message);
+                });
             });
         });
     }

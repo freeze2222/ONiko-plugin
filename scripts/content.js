@@ -11,9 +11,7 @@
     let nikoPosX = result.nikoPosX || 32; // Initial X position
     let nikoPosY = result.nikoPosY || 32; // Initial Y position
 
-    let mousePosX = undefined; // Mouse X position
-    let mousePosY = undefined; // Mouse Y position
-
+    let mousePosX, mousePosY; // Mouse X and Y positions
     let frameCount = 0; // Frame counter
     let sleepFrameCount = 0; // Frame counter for sleep animation
 
@@ -27,23 +25,23 @@
     // Sprites.
     const spriteSets = {
       idle: [[0, 0]],
-      // Sleep sprites.
+
       SleepN: [[0, 1], [-1, 1], [-2, 1], [-3, 1]], // Up
       SleepE: [[0, 2], [-1, 2], [-2, 2], [-3, 2]], // Left
       SleepW: [[0, 3], [-1, 3], [-2, 3], [-3, 3]], // Right
       SleepS: [[0, 4], [-1, 4], [-2, 4], [-3, 4]], // Down
-      // Up
-      N: [[0, 5], [-1, 5], [-2, 5], [-3, 5]],
-      NE: [[0, 5], [-1, 5], [-2, 6], [-3, 6]],
-      NW: [[0, 5], [-1, 5], [-2, 7], [-3, 7]],
-      // Left
-      E: [[0, 6], [-1, 6], [-2, 6], [-3, 6]],
-      // Right
-      W: [[0, 7], [-1, 7], [-2, 7], [-3, 7]],
-      // Down
-      S: [[0, 0], [-1, 0], [-2, 0], [-3, 0]],
-      SE: [[0, 0], [-1, 0], [-2, 6], [-3, 6]],
-      SW: [[0, 0], [-1, 0], [-2, 7], [-3, 7]],
+
+      N: [[0, 5], [-1, 5], [-2, 5], [-3, 5]], // Up
+      NE: [[0, 5], [-1, 5], [-2, 6], [-3, 6]], // Up-Right
+      NW: [[0, 5], [-1, 5], [-2, 7], [-3, 7]], // Up-Left
+
+      E: [[0, 6], [-1, 6], [-2, 6], [-3, 6]], // Right
+
+      W: [[0, 7], [-1, 7], [-2, 7], [-3, 7]], // Left
+
+      S: [[0, 0], [-1, 0], [-2, 0], [-3, 0]], // Down
+      SE: [[0, 0], [-1, 0], [-2, 6], [-3, 6]], // Down-Right
+      SW: [[0, 0], [-1, 0], [-2, 7], [-3, 7]], // Down-Left
     };
 
     function init() {
@@ -79,11 +77,6 @@
       nikoEl.style.backgroundImage = `url(${nikoFile})`;
 
       document.body.appendChild(nikoEl);
-
-      browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
-        nikoPosX = result.nikoPosX || 32; // Load X position
-        nikoPosY = result.nikoPosY || 32; // Load Y position
-      });
 
       updateNikoPosition(); 
       resetSleepTimer(); 
@@ -131,14 +124,8 @@
     // Update Niko's animation.
     function frame() {
       frameCount += 3; // Increment frame count
-      let diffX = 0;
-      let diffY = 0;
-
-      // Calculate distance to mouse.
-      if (typeof(mousePosX) != undefined && typeof(mousePosY) != undefined){
-        diffX = nikoPosX - mousePosX;
-        diffY = nikoPosY - mousePosY;
-      } 
+      let diffX = mousePosX !== undefined ? nikoPosX - mousePosX : 0;
+      let diffY = mousePosY !== undefined ? nikoPosY - mousePosY : 0;
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
       // Check if Niko should go to sleep
@@ -157,15 +144,17 @@
       }
 
       // Determine the direction of Niko based on mouse position.
-      let direction = undefined;
-      if (diffY / distance > 0.5) direction = "N";
-      else if (diffY / distance < -0.5) direction = "S";
-      else if (diffX / distance > 0.5) direction = "W";
-      else if (diffX / distance < -0.5) direction = "E";
+      let direction;
+      if (distance > 0) {
+        if (diffY / distance > 0.5) direction = "N";
+        else if (diffY / distance < -0.5) direction = "S";
+        else if (diffX / distance > 0.5) direction = "W";
+        else if (diffX / distance < -0.5) direction = "E";
+      }
 
       // Stop Niko if he is close to the mouse.
       if (distance < nikoSpeed || distance < 128) {
-        setSprite(direction, 0); // Set idle sprite
+        setSprite(direction || "idle", 0); // Set idle sprite
         return;
       }
 
@@ -184,19 +173,17 @@
 
     // Get the direction for sleep animation
     function getSleepDirection() {
-      let diffX = 0;
-      let diffY = 0;
-      if (typeof(mousePosX) != undefined && typeof(mousePosY) != undefined){
-        diffX = nikoPosX - mousePosX;
-        diffY = nikoPosY - mousePosY;
-      } 
+      let diffX = mousePosX !== undefined ? nikoPosX - mousePosX : 0;
+      let diffY = mousePosY !== undefined ? nikoPosY - mousePosY : 0;
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
-      let direction = undefined;
+      let direction;
 
-      if (diffY / distance > 0.5) direction = "SleepN";
-      else if (diffY / distance < -0.5) direction = "SleepS";
-      else if (diffX / distance > 0.5) direction = "SleepW";
-      else if (diffX / distance < -0.5) direction = "SleepE";
+      if (distance > 0) {
+        if (diffY / distance > 0.5) direction = "SleepN";
+        else if (diffY / distance < -0.5) direction = "SleepS";
+        else if (diffX / distance > 0.5) direction = "SleepW";
+        else if (diffX / distance < -0.5) direction = "SleepE";
+      }
 
       return direction;
     }
@@ -213,8 +200,8 @@
 
     // Update Niko's position on screen and save it in cache.
     function updateNikoPosition() {
-      nikoEl.style.left = `${nikoPosX - 16}px`;
-      nikoEl.style.top = `${nikoPosY - 16}px`;
+      nikoEl.style.left = `${nikoPosX - 24}px`;
+      nikoEl.style.top = `${nikoPosY - 32}px`;
 
       // Save Niko's current position in cache.
       browser.storage.local.set({ nikoPosX, nikoPosY });

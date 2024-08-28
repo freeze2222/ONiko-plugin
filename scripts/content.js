@@ -11,8 +11,8 @@
     let nikoPosX = result.nikoPosX || 32; // Initial X position
     let nikoPosY = result.nikoPosY || 32; // Initial Y position
 
-    let mousePosX = 0; // Mouse X position
-    let mousePosY = 0; // Mouse Y position
+    let mousePosX = undefined; // Mouse X position
+    let mousePosY = undefined; // Mouse Y position
 
     let frameCount = 0; // Frame counter
     let sleepFrameCount = 0; // Frame counter for sleep animation
@@ -64,6 +64,12 @@
       nikoEl.style.imageRendering = "pixelated";
       nikoEl.style.zIndex = 2147483647;
 
+      // Disable overriding by other css files
+      nikoEl.style.setProperty("margin", "0px", "important");
+      nikoEl.style.setProperty("padding", "0px", "important");
+      nikoEl.style.setProperty("background-color", "transparent", "important");
+      nikoEl.style.setProperty("box-shadow", "0px 0px 0px 0px transparent", "important");
+
       // Set background image for Niko.
       let nikoFile = browser.runtime.getURL("img/oniko.png");
       const curScript = document.currentScript;
@@ -74,13 +80,22 @@
 
       document.body.appendChild(nikoEl);
 
+      browser.storage.local.get(['nikoPosX', 'nikoPosY']).then((result) => {
+        nikoPosX = result.nikoPosX || 32; // Load X position
+        nikoPosY = result.nikoPosY || 32; // Load Y position
+      });
+
+      updateNikoPosition(); 
+      resetSleepTimer(); 
+      window.requestAnimationFrame(onAnimationFrame);
+
       // Track mouse position.
-      document.addEventListener("mousemove", function (event) {
+      document.onmousemove = function (event) {
         mousePosX = event.clientX; // Update mouse X position
         mousePosY = event.clientY; // Update mouse Y position
         resetSleepTimer(); // Reset idle timer
         window.requestAnimationFrame(onAnimationFrame); // Start animation frame
-      });
+      };
 
       // Load Niko's position from cache when the tab is activated.
       window.addEventListener("visibilitychange", () => {
@@ -116,10 +131,14 @@
     // Update Niko's animation.
     function frame() {
       frameCount += 3; // Increment frame count
+      let diffX = 0;
+      let diffY = 0;
 
       // Calculate distance to mouse.
-      const diffX = nikoPosX - mousePosX;
-      const diffY = nikoPosY - mousePosY;
+      if (typeof(mousePosX) != undefined && typeof(mousePosY) != undefined){
+        diffX = nikoPosX - mousePosX;
+        diffY = nikoPosY - mousePosY;
+      } 
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
       // Check if Niko should go to sleep
@@ -138,11 +157,11 @@
       }
 
       // Determine the direction of Niko based on mouse position.
-      let direction = '';
-      if (diffY / distance > 0.5) direction += "N";
-      else if (diffY / distance < -0.5) direction += "S";
-      else if (diffX / distance > 0.5) direction += "W";
-      else if (diffX / distance < -0.5) direction += "E";
+      let direction = undefined;
+      if (diffY / distance > 0.5) direction = "N";
+      else if (diffY / distance < -0.5) direction = "S";
+      else if (diffX / distance > 0.5) direction = "W";
+      else if (diffX / distance < -0.5) direction = "E";
 
       // Stop Niko if he is close to the mouse.
       if (distance < nikoSpeed || distance < 128) {
@@ -165,15 +184,19 @@
 
     // Get the direction for sleep animation
     function getSleepDirection() {
-      const diffX = nikoPosX - mousePosX;
-      const diffY = nikoPosY - mousePosY;
+      let diffX = 0;
+      let diffY = 0;
+      if (typeof(mousePosX) != undefined && typeof(mousePosY) != undefined){
+        diffX = nikoPosX - mousePosX;
+        diffY = nikoPosY - mousePosY;
+      } 
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
-      let direction = '';
+      let direction = undefined;
 
-      if (diffY / distance > 0.5) direction += "SleepN";
-      else if (diffY / distance < -0.5) direction += "SleepS";
-      else if (diffX / distance > 0.5) direction += "SleepW";
-      else if (diffX / distance < -0.5) direction += "SleepE";
+      if (diffY / distance > 0.5) direction = "SleepN";
+      else if (diffY / distance < -0.5) direction = "SleepS";
+      else if (diffX / distance > 0.5) direction = "SleepW";
+      else if (diffX / distance < -0.5) direction = "SleepE";
 
       return direction;
     }

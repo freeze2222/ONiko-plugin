@@ -21,7 +21,7 @@
     const sleepFrameSpeed = 0.1; // Speed of sleep frame change (lower is slower)
 
     let SleepTimer; // Timer for sleep state
-    const idleTime = 6000; // 60 seconds
+    const idleTime = 60000; // 60 seconds
 
     // Sprites.
     const spriteSets = {

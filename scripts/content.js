@@ -12,6 +12,7 @@
     let nikoPosY = result.nikoPosY || 32; // Initial Y position
     let mousePosX = result.mousePosX; // Mouse X position
     let mousePosY = result.mousePosY; // Mouse Y position
+    let isSleeping = false; // Flag to check if Niko is sleeping
 
     let frameCount = 0; // Frame counter
     let sleepFrameCount = 0; // Frame counter for sleep animation
@@ -20,8 +21,7 @@
     const sleepFrameSpeed = 0.1; // Speed of sleep frame change (lower is slower)
 
     let SleepTimer; // Timer for sleep state
-    const idleTime = 30000; // 30 seconds
-    let isSleeping = false; // Flag to check if Niko is sleeping
+    const idleTime = 6000; // 60 seconds
 
     // Sprites.
     const spriteSets = {
@@ -79,11 +79,12 @@
 
       document.body.appendChild(nikoEl);
 
-      browser.storage.local.get(['nikoPosX', 'nikoPosY', 'mousePosX', 'mousePosY']).then((result) => {
+      browser.storage.local.get(['nikoPosX', 'nikoPosY', 'mousePosX', 'mousePosY', 'isSleeping']).then((result) => {
         nikoPosX = result.nikoPosX || 32; // Load X position
         nikoPosY = result.nikoPosY || 32; // Load Y position
-        mousePosX = result.mousePosX || undefined ; //Load mouse X position
-        mousePosY = result.mousePosY || undefined ; //Load mouse Y position
+        mousePosX = result.mousePosX || undefined; //Load mouse X position
+        mousePosY = result.mousePosY || undefined; //Load mouse Y position
+        isSleeping = result.isSleeping || undefined;
       });
 
       resetSleepTimer(); 
@@ -117,6 +118,7 @@
         nikoPosY = request.nikoPosY; // Get Y position
         mousePosX = request.mousePosX;
         mousePosY = request.mousePosY;
+        isSleeping = request.isSleeping;
       }
     );
 
@@ -216,7 +218,8 @@
         nikoPosX,
         nikoPosY,
         mousePosX,
-        mousePosY
+        mousePosY,
+        isSleeping
       });
     }
 

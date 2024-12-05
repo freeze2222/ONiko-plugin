@@ -13,12 +13,18 @@
     let mousePosX = result.mousePosX; // Mouse X position
     let mousePosY = result.mousePosY; // Mouse Y position
     let isSleeping = false; // Flag to check if Niko is sleeping
+    let IsMoving = false; // Flag to check if mouse is moving
+    let previousDistance = 0; // Needed for IsMoving flag to work
+    let dirParam = ""; // Parameter for sprite direction. ("Sleep", "Pat","")
+    let direction; // Niko's sprite direction
 
     let frameCount = 0; // Frame counter
     let sleepFrameCount = 0; // Frame counter for sleep animation
+    let patFrameCount = 0; // Frame counter for pat animation
 
     const nikoSpeed = 10; // Niko's movement speed
     const sleepFrameSpeed = 0.1; // Speed of sleep frame change (lower is slower)
+    const patFrameSpeed = 0.5; // Speed of pat frame change (lower is slower)
 
     let SleepTimer; // Timer for sleep state
     const idleTime = 60000; // 60 seconds
@@ -28,21 +34,22 @@
       idle: [[0, 0]],
 
       SleepN: [[0, 1], [-1, 1], [-2, 1], [-3, 1]], // Up
-      SleepE: [[0, 2], [-1, 2], [-2, 2], [-3, 2]], // Left
+      SleepE: [[0, 7], [-1, 7], [-2, 7], [-3, 7]], // Left
       SleepW: [[0, 3], [-1, 3], [-2, 3], [-3, 3]], // Right
       SleepS: [[0, 4], [-1, 4], [-2, 4], [-3, 4]], // Down
 
-      N: [[0, 5], [-1, 5], [-2, 5], [-3, 5]], // Up
-      NE: [[0, 5], [-1, 5], [-2, 6], [-3, 6]], // Up-Right
-      NW: [[0, 5], [-1, 5], [-2, 7], [-3, 7]], // Up-Left
+      PatN: [[0, 1], [-1, 1], [-2, 1], [-3, 1]], // Up
+      PatE: [[0, 3], [-1, 3], [-2, 3], [-3, 3]], // Left
+      PatW: [[0, 2], [-1, 2], [-2, 2], [-3, 2]], // Right
+      PatS: [[0, 4], [-1, 4], [-2, 4], [-3, 4]], // Down 
 
-      E: [[0, 6], [-1, 6], [-2, 6], [-3, 6]], // Right
+      N: [[0, 9], [-1, 9], [-2, 9], [-3, 9]], // Up
 
-      W: [[0, 7], [-1, 7], [-2, 7], [-3, 7]], // Left
+      E: [[0, 10], [-1, 10], [-2, 10], [-3, 10]], // Right
+
+      W: [[0, 11], [-1, 11], [-2, 11], [-3, 11]], // Left
 
       S: [[0, 0], [-1, 0], [-2, 0], [-3, 0]], // Down
-      SE: [[0, 0], [-1, 0], [-2, 6], [-3, 6]], // Down-Right
-      SW: [[0, 0], [-1, 0], [-2, 7], [-3, 7]], // Down-Left
     };
 
     function init() {
@@ -113,7 +120,7 @@
     }
 
     browser.runtime.onMessage.addListener(
-      function(request, sender, sendResponse) {
+      function(request) {
         nikoPosX = request.nikoPosX; // Get X position
         nikoPosY = request.nikoPosY; // Get Y position
         mousePosX = request.mousePosX;
@@ -137,6 +144,16 @@
       let diffY = mousePosY !== undefined ? nikoPosY - mousePosY : 0;
       const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
 
+      // Check if mouse is moving
+      if (distance !== previousDistance) {
+        IsMoving = true;
+      } else {
+        IsMoving = false;
+      }
+
+      // Update previousDistance
+      previousDistance = distance;
+
       // Check if Niko should go to sleep
       if (distance < 128 && !SleepTimer && !isSleeping) {
         SleepTimer = setTimeout(() => {
@@ -145,21 +162,29 @@
         }, idleTime);
       }
 
+      // Determine the direction of Niko based on mouse position.
+      if (distance > 0) {
+        if (diffY / distance > 0.5) direction = dirParam + "N";
+        else if (diffY / distance < -0.5) direction = dirParam + "S";
+        else if (diffX / distance > 0.5) direction = dirParam + "W";
+        else if (diffX / distance < -0.5) direction = dirParam + "E";
+      }
+
       // If Niko is sleeping, update sleep animation
       if (isSleeping) {
-        setSprite(getSleepDirection(), Math.floor(sleepFrameCount));
+        dirParam = "Sleep"
+        setSprite(direction, Math.floor(sleepFrameCount));
         sleepFrameCount += sleepFrameSpeed; // Increment sleep frame count based on speed
         return;
       }
 
-      // Determine the direction of Niko based on mouse position.
-      let direction;
-      if (distance > 0) {
-        if (diffY / distance > 0.5) direction = "N";
-        else if (diffY / distance < -0.5) direction = "S";
-        else if (diffX / distance > 0.5) direction = "W";
-        else if (diffX / distance < -0.5) direction = "E";
-      }
+      // Check if user pats Niko
+      if(distance < 32 && IsMoving == true) {
+        dirParam = "Pat"
+        setSprite(direction, Math.floor(patFrameCount));
+        patFrameCount += patFrameSpeed; // Increment pat frame count based on speed
+        return;
+      }  
 
       // Stop Niko if he is close to the mouse.
       if (distance < nikoSpeed || distance < 128) {
@@ -167,6 +192,7 @@
         return;
       }
 
+      dirParam = ""
       setSprite(direction, frameCount); // Update sprite based on frame count
 
       // Update Niko's position.
@@ -178,23 +204,6 @@
       nikoPosY = Math.min(Math.max(16, nikoPosY), window.innerHeight - 16);
 
       updateNikoPosition(); // Update Niko's position on screen
-    }
-
-    // Get the direction for sleep animation
-    function getSleepDirection() {
-      let diffX = mousePosX !== undefined ? nikoPosX - mousePosX : 0;
-      let diffY = mousePosY !== undefined ? nikoPosY - mousePosY : 0;
-      const distance = Math.sqrt(diffX ** 2 + diffY ** 2);
-      let direction;
-
-      if (distance > 0) {
-        if (diffY / distance > 0.5) direction = "SleepN";
-        else if (diffY / distance < -0.5) direction = "SleepS";
-        else if (diffX / distance > 0.5) direction = "SleepW";
-        else if (diffX / distance < -0.5) direction = "SleepE";
-      }
-
-      return direction;
     }
 
     // Reset idle timer

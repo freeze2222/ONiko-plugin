@@ -4,7 +4,7 @@ The oNiko extension is designed for browsers based on Chromium and Firefox.
 
 Based on [this GitHub repository](https://github.com/bazelik-null/oniko.js).
 
-**!WARNING!: The version of the extension for Chromium is outdated, and its support has been frozen. If you want to help, you can make a PR to update it. There will be no support from me (at least for now).
+**!WARNING!: The version of the extension for Chromium is outdated, and its support has been frozen. If you want to help, you can make a PR to update it. There will be no support from me (at least for now).**
 
 **Installation on Firefox:**
 Download this extension from the [Mozilla Add-ons Marketplace](https://addons.mozilla.org/en-US/firefox/addon/oniko/).

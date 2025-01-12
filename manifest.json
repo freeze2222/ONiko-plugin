@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "oNiko",
-  "version": "1.11",
+  "version": "2.0",
   "description": "Just Niko follows your mouse (Sprites from OneShot)",
   "icons": {
     "96": "icons/niko.png"
@@ -20,5 +20,9 @@
     "activeTab",
     "storage",
     "tabs"
-  ]
+  ],
+  "browser_action": {
+    "default_icon": "icons/niko.png",
+    "default_popup": "options.html"
+  }
 }
